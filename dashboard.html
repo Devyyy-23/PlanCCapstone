@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en-CA">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BV04 | Universal Line-Wise NR Dashboard</title>
+  
+  <link rel="stylesheet" href="./styles.css" />
+  
+  <script src="https://unpkg.com/cytoscape@3.28.1/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/dagre@0.8.5/dist/dagre.min.js"></script>
+  <script src="https://unpkg.com/cytoscape-dagre@2.5.0/cytoscape-dagre.js"></script>
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+  
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+  <div class="app">
+    <aside class="sidebar" aria-label="System panel">
+      <header class="sidebar__header">
+        <h1>Line-Wise NR Dashboard</h1>
+        <p class="subtitle">Topology + VCI Heatmap</p>
+      </header>
+
+      <section class="panel">
+        <h2>Universal Data Management</h2>
+        <div class="actions">
+          <input type="file" id="upload-cdf" accept=".xlsx, .xls, .csv" style="display: none;" />
+          
+          <button id="btn-upload" type="button" onclick="document.getElementById('upload-cdf').click()">1. Select Dataset</button>
+          
+          <div style="margin-top:5px;">
+            <label style="font-size:10px; color:var(--muted);">Target Sheet Name or Index:</label>
+            <input id="sheet-selector" type="text" value="0" style="width: 100%; padding: 6px; background: #1b2531; color: white; border: 1px solid var(--border); border-radius: 5px; font-size: 11px;" placeholder="e.g., 0 or Sheet1" />
+          </div>
+
+          <button id="btn-template" type="button" onclick="downloadTemplate()" style="font-size:11px; margin-top: 5px; background:#1b2531; color:var(--muted);">Download .XLSX Template</button>
+          
+          <button id="btn-run" type="button" style="background: #2ecc71; color: black; margin-top: 10px;">2. Run Solver</button>
+          
+          <button id="btn-download" type="button" onclick="downloadResults()">3. Download .XLSX Solution</button>
+        </div>
+        <div style="margin-top: 8px; font-size: 11px; color: var(--muted);" id="active-file">Active: mock.json</div>
+      </section>
+
+      <section class="panel">
+        <h2>System Metadata</h2>
+        <div class="kv">
+          <div class="kv__row"><span class="kv__key">Method</span><span class="kv__val" id="meta-method">—</span></div>
+          <div class="kv__row"><span class="kv__key">Iterations</span><span class="kv__val" id="meta-iter">—</span></div>
+          <div class="kv__row"><span class="kv__key">Max Error</span><span class="kv__val" id="meta-err">—</span></div>
+          <div class="kv__row"><span class="kv__key">Exec Time</span><span class="kv__val" id="meta-time">—</span></div>
+          <div class="kv__row"><span class="kv__key">Converged</span><span class="kv__val" id="meta-conv">—</span></div>
+          <div class="kv__row"><span class="kv__key">Grid Severity</span><span class="kv__val" id="meta-severity" style="font-weight: bold;">—</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Selection Details</h2>
+        <div class="selection" id="selection">
+          <div class="selection__hint">Click a bus or line in the graph.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Event Log</h2>
+        <div id="event-log" style="height: 100px; overflow-y: auto; background: #0f141a; padding: 6px; border: 1px solid #243041; border-radius: 4px;"></div>
+      </section>
+    </aside>
+
+    <main class="main" style="display: flex; flex-direction: column;">
+      <div class="topbar">
+        <div class="topbar__left">
+          <strong>Status:</strong> <span id="status-text">Ready</span>
+        </div>
+      </div>
+      <div id="cy" class="cy" style="flex: 1;" aria-label="Grid graph"></div>
+      
+      <div id="charts-area" style="height: 250px; display: flex; border-top: 1px solid var(--border); background: var(--bg);">
+        <div id="chart-voltage" style="flex: 1;"></div>
+        <div id="chart-angle" style="flex: 1;"></div>
+      </div>
+    </main>
+  </div>
+
+  <button onclick="toggleHelp()" style="position:fixed; bottom:20px; right:20px; border-radius:50%; width:50px; height:50px; background:var(--blue); color:white; border:none; cursor:pointer; font-size:20px; font-weight:bold; box-shadow: 0 4px 10px rgba(0,0,0,0.3); z-index:1000;">?</button>
+
+  <div id="help-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; justify-content:center; align-items:center;">
+    <div class="panel" style="width:450px; padding:25px; border: 1px solid var(--blue);">
+      <h2 style="color:var(--blue);">BV04 Solver Tutorial</h2>
+      <div style="font-size:13px; color:var(--text); line-height:1.6;">
+        <p>1. <strong>Download Template:</strong> Get the formatted .xlsx grid file.</p>
+        <p>2. <strong>Input Data:</strong> Open the file in Excel, add your bus/line data, and save.</p>
+        <p>3. <strong>Target Sheet:</strong> Type the Sheet Name or Index (0 for first tab) into the input box.</p>
+        <p>4. <strong>Run Solver:</strong> Click the green button to process any number of buses.</p>
+        <p>5. <strong>Download Solution:</strong> Export final results back to a professional Excel report.</p>
+      </div>
+      <button onclick="toggleHelp()" style="margin-top:20px; width:100%; background:var(--blue);">Got it!</button>
+    </div>
+  </div>
+
+  <script src="./app.js"></script>
+  <script src="./chatbot.js"></script>
+</body>
+</html>

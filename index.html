@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LineWise — Cloud Distribution Network Analysis</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #131720;
+    --bg3: #1a1f2e;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.13);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --green-glow: rgba(34,197,94,0.25);
+    --blue: #60a5fa;
+    --blue-dim: rgba(96,165,250,0.1);
+    --amber: #fbbf24;
+    --red: #f87171;
+    --text: #f1f5f9;
+    --text2: #94a3b8;
+    --text3: #475569;
+    --mono: 'Space Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── Grid bg ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(34,197,94,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(34,197,94,0.03) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Nav ── */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+    height: 56px;
+    background: rgba(13,15,20,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .nav-logo span { color: var(--text2); }
+
+  .nav-links {
+    display: flex;
+    gap: 1.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-size: 13px;
+    color: var(--text2);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover { color: var(--text); }
+
+  /* ── Sections ── */
+  section { position: relative; z-index: 1; }
+
+  /* ── Hero ── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 7rem 2rem 4rem;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.8); }
+  }
+
+  .hero h1 {
+    font-family: var(--mono);
+    font-size: clamp(2.4rem, 6vw, 5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text);
+    max-width: 800px;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--green);
+  }
+
+  .hero-sub {
+    margin-top: 1.5rem;
+    font-size: 1.1rem;
+    color: var(--text2);
+    max-width: 560px;
+    font-weight: 300;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .hero-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--green);
+    color: #0a0f0a;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 14px 28px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px var(--green-glow);
+  }
+
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    color: var(--text2);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    padding: 14px 28px;
+    border-radius: 4px;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .btn-secondary:hover { color: var(--text); border-color: rgba(255,255,255,0.25); }
+
+  /* hero stats strip */
+  .hero-stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+    animation: fadeUp 0.6s 0.4s ease both;
+  }
+
+  .stat-item { text-align: center; }
+
+  .stat-num {
+    font-family: var(--mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--green);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── What section ── */
+  .what {
+    padding: 5rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 1rem;
+  }
+
+  .what h2 {
+    font-family: var(--mono);
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 700;
+    color: var(--text);
+    max-width: 600px;
+    line-height: 1.3;
+    margin-bottom: 1.5rem;
+  }
+
+  .what-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 3rem;
+  }
+
+  .what-card {
+    background: var(--bg2);
+    padding: 2rem;
+    transition: background 0.2s;
+  }
+
+  .what-card:hover { background: var(--bg3); }
+
+  .what-card-icon {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(34,197,94,0.25);
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+
+  .what-card h3 {
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .what-card p {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.65;
+  }
+
+  /* ── VCI explainer ── */
+  .vci-section {
+    padding: 5rem 2rem;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vci-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+
+  .vci-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 13px;
+    margin-top: 1.5rem;
+  }
+
+  .vci-table th {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--text3);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .vci-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  .vci-table td:first-child { color: var(--text); font-weight: 700; }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-family: var(--mono);
+    letter-spacing: 0.06em;
+    font-weight: 700;
+  }
+
+  .badge-green { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .badge-amber { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .badge-red   { background: rgba(248,113,113,0.15); color: #f87171; }
+
+  /* ── Pipeline ── */
+  .pipeline {
+    padding: 5rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .pipe-steps {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 3rem;
+    position: relative;
+  }
+
+  .pipe-step {
+    background: var(--bg2);
+    padding: 2rem 1.5rem;
+    position: relative;
+  }
+
+  .pipe-num {
+    font-family: var(--mono);
+    font-size: 2rem;
+    font-weight: 700;
+    color: rgba(34,197,94,0.15);
+    line-height: 1;
+    margin-bottom: 1rem;
+  }
+
+  .pipe-step h4 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 0.5rem;
+  }
+
+  .pipe-step p {
+    font-size: 13px;
+    color: var(--text3);
+    line-height: 1.55;
+  }
+
+  /* ── Roadmap ── */
+  .roadmap {
+    padding: 5rem 2rem;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+  }
+
+  .roadmap-inner {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .roadmap-items {
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .roadmap-item {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    background: var(--bg2);
+    padding: 1.5rem 2rem;
+    gap: 2rem;
+    align-items: start;
+    transition: background 0.2s;
+  }
+
+  .roadmap-item:hover { background: var(--bg3); }
+
+  .roadmap-phase {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .roadmap-item h4 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  .roadmap-item p {
+    font-size: 13px;
+    color: var(--text3);
+  }
+
+  /* ── Team ── */
+  .team {
+    padding: 5rem 2rem;
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .team-grid {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+  }
+
+  .team-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem 2rem;
+    text-align: center;
+    min-width: 160px;
+  }
+
+  .team-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--green);
+    margin: 0 auto 0.75rem;
+  }
+
+  .team-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .team-role {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 3px;
+    font-family: var(--mono);
+  }
+
+  /* ── Footer CTA ── */
+  .cta {
+    padding: 5rem 2rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+  }
+
+  .cta h2 {
+    font-family: var(--mono);
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+
+  .cta p {
+    color: var(--text2);
+    font-size: 15px;
+    margin-bottom: 2rem;
+  }
+
+  footer {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  footer p {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+  }
+
+  @media (max-width: 700px) {
+    .what-grid, .pipe-steps { grid-template-columns: 1fr; }
+    .vci-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .roadmap-item { grid-template-columns: 1fr; gap: 0.5rem; }
+    .hero-stats { gap: 1.5rem; }
+    nav .nav-links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">Line<span>—</span>Wise <span>// NR</span></div>
+  <ul class="nav-links">
+    <li><a href="#what">About</a></li>
+    <li><a href="#pipeline">How it works</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="#team">Team</a></li>
+  </ul>
+  <a href="/dashboard.html" class="btn-primary" style="padding:10px 20px;font-size:12px;">Launch Dashboard →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">TMU Capstone 2026 — Electrical Engineering</div>
+  <h1>Grid stability analysis,<br><em>line by line.</em></h1>
+  <p class="hero-sub">A cloud-based power distribution network analysis platform using the line-wise Newton-Raphson method. Identify voltage instability before it becomes a collapse.</p>
+  <div class="hero-actions">
+    <a href="/dashboard.html" class="btn-primary">Launch Dashboard →</a>
+    <a href="#what" class="btn-secondary">Learn more</a>
+  </div>
+  <div class="hero-stats">
+    <div class="stat-item">
+      <div class="stat-num">69</div>
+      <div class="stat-label">Bus systems tested</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">10⁻⁶</div>
+      <div class="stat-label">Convergence tolerance</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">0.33s</div>
+      <div class="stat-label">Avg solve time</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Cloud-native</div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT -->
+<section class="what" id="what">
+  <div class="section-label">// What it does</div>
+  <h2>The problem with conventional power flow analysis</h2>
+  <p style="color:var(--text2);max-width:640px;font-size:15px;">Traditional bus-wise Newton-Raphson methods tell you <em>if</em> your system is unstable — but not <em>which line</em> is causing it. LineWise solves that.</p>
+
+  <div class="what-grid">
+    <div class="what-card">
+      <div class="what-card-icon">INPUT</div>
+      <h3>Upload IEEE CDF format data</h3>
+      <p>Upload your distribution network case file in standard IEEE Common Data Format (Excel). Bus data, branch data, and system parameters are parsed and validated automatically.</p>
+    </div>
+    <div class="what-card">
+      <div class="what-card-icon">SOLVER</div>
+      <h3>Line-wise Newton-Raphson engine</h3>
+      <p>Uses squared voltage magnitudes (U = V²) as state variables, improving numerical stability near collapse. Solves without constructing the bus admittance matrix.</p>
+    </div>
+    <div class="what-card">
+      <div class="what-card-icon">VCI</div>
+      <h3>Voltage Collapse Index per line</h3>
+      <p>Each transmission line gets a VCI score extracted directly from the Jacobian. Lines approaching collapse are identified before the system fails — something bus-wise methods cannot do.</p>
+    </div>
+    <div class="what-card">
+      <div class="what-card-icon">VISUAL</div>
+      <h3>Interactive network dashboard</h3>
+      <p>Real-time topology map with colour-coded VCI heatmap, voltage profile charts, phase angle plots, and downloadable results — accessible from any browser, no installation required.</p>
+    </div>
+  </div>
+</section>
+
+<!-- VCI TABLE -->
+<section class="vci-section" id="vci">
+  <div class="vci-inner">
+    <div>
+      <div class="section-label">// Voltage Collapse Index</div>
+      <h2 style="font-family:var(--mono);font-size:1.8rem;font-weight:700;line-height:1.3;margin-bottom:1rem;">Know which line is failing before it does</h2>
+      <p style="color:var(--text2);font-size:14px;line-height:1.7;">The VCI is derived from the Jacobian matrix at convergence. As a line approaches its maximum loadability, VCI approaches zero. Our three-tier threshold model turns this into an actionable signal for engineers and operators.</p>
+    </div>
+    <div>
+      <table class="vci-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>VCI Range</th>
+            <th>Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-green">Stable</span></td>
+            <td>VCI &gt; 0.3</td>
+            <td>Line operating normally</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-amber">Marginal</span></td>
+            <td>0.1 – 0.3</td>
+            <td>Approaching loadability limit</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-red">Critical</span></td>
+            <td>VCI &lt; 0.1</td>
+            <td>Voltage collapse risk — act now</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="font-size:12px;color:var(--text3);margin-top:1rem;font-family:var(--mono);">// Thresholds based on line-wise NR formulation by Mohamed & Venkatesh, IEEE Trans. Power Systems, 2018</p>
+    </div>
+  </div>
+</section>
+
+<!-- PIPELINE -->
+<section class="pipeline" id="pipeline">
+  <div class="section-label">// System architecture</div>
+  <h2 style="font-family:var(--mono);font-size:1.8rem;font-weight:700;">Four modules, one workflow</h2>
+
+  <div class="pipe-steps">
+    <div class="pipe-step">
+      <div class="pipe-num">01</div>
+      <h4>Input Module</h4>
+      <p>Parses IEEE CDF Excel files. Validates BUS & BRANCH data. Enforces format rules. Builds solver-ready network model.</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">02</div>
+      <h4>Solver Unit</h4>
+      <p>Line-wise NR iterations on squared voltages. Assembles Jacobian from line parameters. Converges to 10⁻⁶ tolerance.</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">03</div>
+      <h4>Output Module</h4>
+      <p>Serializes bus voltages, phase angles, line flows, and VCI to structured CSV/XLSX. Validates before transmission.</p>
+    </div>
+    <div class="pipe-step">
+      <div class="pipe-num">04</div>
+      <h4>Visualization</h4>
+      <p>Cytoscape.js topology graph, Plotly.js charts, VCI heatmap. Hosted on Vercel. Download results in one click.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ROADMAP -->
+<section class="roadmap" id="roadmap">
+  <div class="roadmap-inner">
+    <div class="section-label">// Future roadmap</div>
+    <h2 style="font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--text);">From calculator to grid intelligence platform</h2>
+
+    <div class="roadmap-items">
+      <div class="roadmap-item">
+        <div class="roadmap-phase" style="color:var(--green);">V1 — Now</div>
+        <div>
+          <h4>Cloud-based single-run analysis</h4>
+          <p>Upload IEEE CDF data, run line-wise NR solver, view VCI heatmap and voltage profiles, download results.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-phase" style="color:var(--blue);">V2 — Storage</div>
+        <div>
+          <h4>Historical trend analysis (AWS/Azure)</h4>
+          <p>Persist every result with timestamps. Compare quarterly snapshots. Track line degradation season-over-season. Fault historian — log where and when collapses occurred.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-phase" style="color:var(--amber);">V3 — Intelligence</div>
+        <div>
+          <h4>AI-assisted diagnostics</h4>
+          <p>Anomaly detection on VCI trends. Pattern recognition across regions and seasons. Natural language summaries for non-technical stakeholders. Secondary AI verification of solver results.</p>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-phase" style="color:var(--red);">V4 — Scale</div>
+        <div>
+          <h4>Real-time SCADA integration</h4>
+          <p>Live data ingestion. N-1 contingency analysis. Support for meshed networks. SaaS licensing model for utilities and engineering consulting firms.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TEAM -->
+<section class="team" id="team">
+  <div class="section-label">// Team BV04</div>
+  <h2 style="font-family:var(--mono);font-size:1.8rem;font-weight:700;">Toronto Metropolitan University, 2026</h2>
+  <p style="color:var(--text2);font-size:14px;margin-top:0.5rem;">Electrical Engineering Capstone Design Project</p>
+  <div class="team-grid">
+    <div class="team-card">
+      <div class="team-avatar">JC</div>
+      <div class="team-name">Jaedon Chen</div>
+      <div class="team-role">// Solver Unit</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">DP</div>
+      <div class="team-name">Dev Patel</div>
+      <div class="team-role">// Output Module</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">KK</div>
+      <div class="team-name">Kishore Kirubakaran</div>
+      <div class="team-role">// Solver Unit</div>
+    </div>
+    <div class="team-card">
+      <div class="team-avatar">DC</div>
+      <div class="team-name">Diego Cortes Cabal</div>
+      <div class="team-role">// Input Module</div>
+    </div>
+  </div>
+  <p style="color:var(--text3);font-size:12px;margin-top:2rem;font-family:var(--mono);">Supervisor: Shima Bagher Zade Homayie — Dept. of Electrical, Computer & Biomedical Engineering</p>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <h2>See it in action.</h2>
+  <p>Upload an IEEE 33-bus or 69-bus case file and run the solver in under a second.</p>
+  <a href="/dashboard.html" class="btn-primary">Open Dashboard →</a>
+</section>
+
+<footer>
+  <p>LineWise — TMU Capstone BV04 // 2026</p>
+  <p>Built with Python · Flask · Vercel · Cytoscape.js · Plotly.js</p>
+</footer>
+
+<script src="./chatbot.js"></script>
+</body>
+</html>
