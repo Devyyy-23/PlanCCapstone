@@ -1,7 +1,7 @@
 // app.js - Universal XLSX Integration
 "use strict";
 
-const API_URL = "http://127.0.0.1:5000/solve";
+const API_URL = "https://linewise-kccp.vercel.app/solve";
 const CRITICAL_THRESHOLD = 0.1;
 const MARGINAL_THRESHOLD = 0.3;
 
